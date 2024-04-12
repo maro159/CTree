@@ -7,6 +7,15 @@
 
 #include "pins.h"
 #include "led.h"
+#include "sine.h"
+#include "avr/interrupt.h"
+
+static volatile uint8_t led1_brightness_index = 0;
+static volatile uint8_t led2_brightness_index = 85;
+static volatile uint8_t led3_brightness_index = 171;
+static volatile uint8_t ovf_counter = 0;
+
+static uint8_t update_period = 0;
 
 void init_led(void)
 {
@@ -19,8 +28,8 @@ void init_led(void)
 	
 	// single slope PWM mode
 	TCA0.SINGLE.CTRLB |= TCA_SINGLE_WGMODE_SINGLESLOPE_gc;
-	// set period to 128 ticks (256 Hz frequency for 32.768 kHz clock)
-	TCA0.SINGLE.PER = 0x0010;
+	// set period to 256 ticks (128 Hz frequency for 32.768 kHz clock)
+	TCA0.SINGLE.PER = 255;
 	// interrupt on overflow - each cycle
 	TCA0.SINGLE.INTCTRL |= TCA_SINGLE_OVF_bm;
 	// connect pins to channels
@@ -29,7 +38,12 @@ void init_led(void)
 	TCA0.SINGLE.CTRLA |= TCA_SINGLE_ENABLE_bm;
 }
 
-void set_led_brightness(led_t led, uint8_t brightness)
+void led_set_update_period(uint8_t period)
+{
+	update_period = period;
+}
+
+void led_set_brightness(led_t led, uint8_t brightness)
 {
 	switch(led)
 	{
@@ -43,4 +57,18 @@ void set_led_brightness(led_t led, uint8_t brightness)
 			TCA0.SINGLE.CMP2BUFL = brightness;
 			break;
 	}
+}
+
+ISR(TCA0_OVF_vect)
+{
+	ovf_counter++;
+	// prepare new values for led brightness
+	if(ovf_counter >= update_period)
+	{
+		led_set_brightness(Led1, sine_wave[led1_brightness_index++]);
+		led_set_brightness(Led2, sine_wave[led2_brightness_index++]);
+		led_set_brightness(Led3, sine_wave[led3_brightness_index++]);
+		ovf_counter = 0;
+	}
+	return;
 }

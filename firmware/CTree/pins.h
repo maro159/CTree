@@ -13,7 +13,7 @@
 #include <stdbool.h>
 
 // pin definitions
-#define SWITCH_PIN 7
+#define BUTTON_PIN 7
 #define POWER_HOLD_PIN 6
 
 #define LED1_PIN 2
@@ -25,7 +25,7 @@
 #define PINCTRL(n) PINCTRL_HELPER(n)
 
 // input checks
-#define IS_SWITCH ((PORTA.IN & (1U << SWITCH_PIN)) != (1U << SWITCH_PIN))	// inverted logic
+#define IS_BUTTON ((PORTA.IN & (1U << BUTTON_PIN)) != (1U << BUTTON_PIN))	// inverted logic
 
 
 #endif /* PINS_H_ */

@@ -4,15 +4,22 @@
  * Created: 4/7/2024 5:31:34 PM
  *  Author: mrcm7
  */ 
+#define F_CPU 32768
 
 #include <avr/io.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "pins.h"
 #include "led.h"
 #include "power_hold.h"
-#include "switch.h"
+#include "BUTTON.h"
+#include "rtc.h"
+
+
+static uint8_t button_states_10ms = 0;
+static uint8_t button_states_100ms = 0;
 
 static void init_clock(void)
 {
@@ -28,41 +35,49 @@ static void init_clock(void)
 	CLKCTRL.MCLKLOCK = CLKCTRL_LOCKEN_bm;
 }
 
-void init_rtc(void)
-{
-	/*
-	 * NOTE: The peripheral clock (CLK_PER) is required to be at least four times faster than the RTC clock (CLK_RTC)
-	 * for reading the counter value, regardless of the prescaler setting
-	 */
-	// 1kHz clock	
-	RTC.CLKSEL |= RTC_CLKSEL_INT1K_gc;
-	// set period to 
-	// enable interrupt on overflow
-	RTC.INTCTRL |= RTC_OVF_bm;	
-	// enable module
-	while(RTC.STATUS & RTC_CTRLABUSY_bm);
-	RTC.CTRLA |= RTC_RTCEN_bm;
-}
-
 static void init(void)
 {
 	init_clock();
 	init_rtc();
 	init_led();
 	init_power_hold();
-	init_switch();
+	init_button();
 }
-
 
 int main(void)
 {
 	init();
-	if (IS_SWITCH) power_hold_set(true);	// enable power hold after power-on initiated by switch
+	if (IS_BUTTON) power_hold_set(true);	// enable power hold after power-on initiated by button
 	sei();									// enable interrupts
+	while (IS_BUTTON);						// wait for button release
+	_delay_ms(1000);
 	
 	while(true)
 	{
 		
+		
+		if(flag10ms)
+		{
+			// left shift button states and add current button state
+			button_states_10ms = (button_states_10ms << 1) | (IS_BUTTON & 0x01);
+			// when click for at least 30ms
+			if((button_states_100ms & 0b00001111) == 0b00000111)
+			{
+				// TODO: button clicked
+			}
+			flag10ms = false;
+		}
+		
+		if(flag100ms)
+		{
+			button_states_100ms = (button_states_100ms << 1) | (IS_BUTTON & 0x01);
+			// power off when button hold for at least 800ms
+			if(button_states_100ms == 0b01111111)
+			{	
+				power_hold_set(false);
+			}
+			flag100ms = false;
+		}
 	}
 	return 0;
 }
