@@ -10,6 +10,6 @@
 #define POWER_HOLD_H_
 
 void init_power_hold(void);
-void power_hold_set(bool state);
+void power_hold_enable(bool state);
 
 #endif /* POWER_HOLD_H_ */

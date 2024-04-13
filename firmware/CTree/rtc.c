@@ -9,9 +9,9 @@
 #include "pins.h"
 #include "rtc.h"
 
-static volatile uint8_t count_10ms = 0;
-volatile bool flag10ms = 0;
-volatile bool flag100ms = 0;
+#define TIMER_COUNT_500MS 51 // 50 * 10 ms + 1 to accommodate for pre-decrement in ISR
+
+volatile bool time_flags = 0x00;
 
 void init_rtc(void)
 {
@@ -33,12 +33,14 @@ void init_rtc(void)
 
 ISR(RTC_CNT_vect)
 {
-	flag10ms = true;
-	count_10ms++;
-	if(count_10ms >= 10)
+	static uint8_t timer_count_500ms = TIMER_COUNT_500MS; // static to preserve value
+
+	time_flags |= TIME_FLAG_10MS;		// set 10ms flag
+	
+	if(--timer_count_500ms == 0)		// pre-decrement is faster
 	{
-		flag100ms = true;
-		count_10ms = 0;
+		time_flags |= TIME_FLAG_500MS;	// set 500ms flag
+		timer_count_500ms = TIMER_COUNT_500MS;	// reset counter
 	}
 	return;
 }

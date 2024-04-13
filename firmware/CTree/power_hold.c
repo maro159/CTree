@@ -14,7 +14,7 @@ void init_power_hold(void)
 	PORTA.DIRSET = (1U << POWER_HOLD_PIN);
 }
 
-void power_hold_set(bool state)
+void power_hold_enable(bool state)
 {
 	if (true == state)
 	{

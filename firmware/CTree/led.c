@@ -10,12 +10,7 @@
 #include "sine.h"
 #include "avr/interrupt.h"
 
-static volatile uint8_t led1_brightness_index = 0;
-static volatile uint8_t led2_brightness_index = 85;
-static volatile uint8_t led3_brightness_index = 171;
 static volatile uint8_t ovf_counter = 0;
-
-static uint8_t update_period = 0;
 
 void init_led(void)
 {
@@ -32,43 +27,61 @@ void init_led(void)
 	TCA0.SINGLE.PER = 255;
 	// interrupt on overflow - each cycle
 	TCA0.SINGLE.INTCTRL |= TCA_SINGLE_OVF_bm;
-	// connect pins to channels
-	TCA0.SINGLE.CTRLB |= TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm;
-	// enable module
-	TCA0.SINGLE.CTRLA |= TCA_SINGLE_ENABLE_bm;
 }
 
-void led_set_update_period(uint8_t period)
+void led_enable(bool state)
 {
-	update_period = period;
+	if(true == state)
+	{
+		// connect pins to channels
+		TCA0.SINGLE.CTRLB |= TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm;
+		// enable module
+		TCA0.SINGLE.CTRLA |= TCA_SINGLE_ENABLE_bm;
+	}
+	else
+	{
+		// disconnect pins from channels
+		TCA0.SINGLE.CTRLB &= !(TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm);
+		// disable module
+		TCA0.SINGLE.CTRLA &= !TCA_SINGLE_ENABLE_bm;
+	}
 }
 
-void led_set_brightness(led_t led, uint8_t brightness)
+static void led_set_brightness(led_t led, uint8_t brightness)
 {
 	switch(led)
 	{
-		case Led1:
+		case LED1:
 			TCA0.SINGLE.CMP0BUFL = brightness;
 			break;
-		case Led2:
+		case LED2:
 			TCA0.SINGLE.CMP1BUFL = brightness;
 			break;
-		case Led3:
+		case LED3:
 			TCA0.SINGLE.CMP2BUFL = brightness;
 			break;
+	}
+}
+
+void led_process(led_mode_t *mode)
+{
+	// definition of start index for led channels, provide phase offset of approx. 120 degrees
+	static uint8_t led1_brightness_index = 0;
+	static uint8_t led2_brightness_index = 85;
+	static uint8_t led3_brightness_index = 171;
+	
+	// prepare new values for led brightness
+	if(ovf_counter >= mode->period)
+	{
+		led_set_brightness(LED1, sine_get_value(led1_brightness_index++) / mode->dim);
+		led_set_brightness(LED2, sine_get_value(led2_brightness_index++) / mode->dim);
+		led_set_brightness(LED3, sine_get_value(led3_brightness_index++) / mode->dim);
+		ovf_counter = 0;
 	}
 }
 
 ISR(TCA0_OVF_vect)
 {
 	ovf_counter++;
-	// prepare new values for led brightness
-	if(ovf_counter >= update_period)
-	{
-		led_set_brightness(Led1, sine_wave[led1_brightness_index++]);
-		led_set_brightness(Led2, sine_wave[led2_brightness_index++]);
-		led_set_brightness(Led3, sine_wave[led3_brightness_index++]);
-		ovf_counter = 0;
-	}
 	return;
 }

@@ -18,9 +18,6 @@
 #include "rtc.h"
 
 
-static uint8_t button_states_10ms = 0;
-static uint8_t button_states_100ms = 0;
-
 static void init_clock(void)
 {
 	// Unlock protected I/O registers
@@ -44,39 +41,81 @@ static void init(void)
 	init_button();
 }
 
+static void led_mode_decode(led_mode_t *mode, uint8_t click_count)
+{
+	switch(click_count)
+	{
+		case 0:
+			mode->period = LED_PERIOD_HIGH;
+			mode->dim = LED_DIM_HIGH;
+			break;
+		case 1:
+			mode->period = LED_PERIOD_LOW;
+			mode->dim = LED_DIM_HIGH;
+			break;
+		case 2:
+			mode->period = LED_PERIOD_HIGH;
+			mode->dim = LED_DIM_MID;
+			break;
+		case 3:
+			mode->period = LED_PERIOD_LOW;
+			mode->dim = LED_DIM_MID;
+			break;
+		case 4:
+			mode->period = LED_PERIOD_HIGH;
+			mode->dim = LED_DIM_LOW;
+			break;
+		case 5:
+			mode->period = LED_PERIOD_LOW;
+			mode->dim = LED_DIM_LOW;
+			break;
+		default:
+			mode->period = LED_PERIOD_HIGH;
+			mode->dim = LED_DIM_LOW;
+			break;
+	}
+}
+
 int main(void)
 {
+	uint8_t button_states_10ms = 0;
+	uint8_t button_states_500ms = 0;
+	uint8_t click_count = 0;
+	led_mode_t led_mode = {.dim = LED_DIM_HIGH, .period = LED_PERIOD_HIGH};
+	led_mode_decode(&led_mode, click_count);
+	
 	init();
-	if (IS_BUTTON) power_hold_set(true);	// enable power hold after power-on initiated by button
+	led_enable(true);
+	
+	if (IS_BUTTON) power_hold_enable(true);	// enable power hold after power-on initiated by button
 	sei();									// enable interrupts
 	while (IS_BUTTON);						// wait for button release
 	_delay_ms(1000);
 	
 	while(true)
 	{
-		
-		
-		if(flag10ms)
+		led_process(&led_mode);
+		if(time_flags & TIME_FLAG_10MS)
 		{
 			// left shift button states and add current button state
 			button_states_10ms = (button_states_10ms << 1) | (IS_BUTTON & 0x01);
-			// when click for at least 30ms
-			if((button_states_100ms & 0b00001111) == 0b00000111)
+			// detect hold for 40ms to debounce
+			if((button_states_10ms & 0b00001111) == 0b00000111)
 			{
-				// TODO: button clicked
+				led_mode_decode(&led_mode, click_count);
 			}
-			flag10ms = false;
+			time_flags &= !TIME_FLAG_10MS;
 		}
 		
-		if(flag100ms)
+		if(time_flags & TIME_FLAG_500MS)
 		{
-			button_states_100ms = (button_states_100ms << 1) | (IS_BUTTON & 0x01);
-			// power off when button hold for at least 800ms
-			if(button_states_100ms == 0b01111111)
+			button_states_500ms = (button_states_500ms << 1) | (IS_BUTTON & 0x01);
+			// power off when button hold for at least 2000ms
+			if((button_states_500ms & 0b00001111) == 0b00000111)
 			{	
-				power_hold_set(false);
+				power_hold_enable(false);
 			}
-			flag100ms = false;
+			time_flags &= !TIME_FLAG_500MS;
 		}
 	}
 	return 0;
