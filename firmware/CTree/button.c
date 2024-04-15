@@ -13,9 +13,9 @@
 void init_button(void)
 {
 	// set direction to input (redundant)
-	PORTA.DIRCLR = BUTTON_PIN;
+	PORTA.DIRCLR = (1U << BUTTON_PIN);
 	// enable internal pullup
-	PORTA.PINCTRL(BUTTON_PIN) |= PORT_INVEN_bm;
+	PORTA.PINCTRL(BUTTON_PIN) |= PORT_PULLUPEN_bm;
 	// interrupt on falling edge
-	PORTA.PINCTRL(BUTTON_PIN) |= PORT_ISC_FALLING_gc;
+	// PORTA.PINCTRL(BUTTON_PIN) |= PORT_ISC_FALLING_gc;
 }

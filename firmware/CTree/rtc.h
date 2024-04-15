@@ -11,10 +11,10 @@
 
 #include "pins.h"
 
-#define TIME_FLAG_10MS 0x01
-#define TIME_FLAG_500MS 0x02
+#define TIME_FLAG_10MS_bm 0x01
+#define TIME_FLAG_500MS_bm 0x02
 
-volatile bool time_flags;
+volatile uint8_t time_flags;
 
 void init_rtc(void);
 

@@ -26,7 +26,7 @@ static void init_clock(void)
 	CLKCTRL.MCLKCTRLA = CLKCTRL_CLKSEL_OSCULP32K_gc;
 	// disable prescaler
 	CPU_CCP = CCP_IOREG_gc;
-	CLKCTRL.MCLKCTRLB &= !CLKCTRL_PEN_bm;
+	CLKCTRL.MCLKCTRLB &= ~CLKCTRL_PEN_bm;
 	// lock clock settings till next hardware reset
 	CPU_CCP = CCP_IOREG_gc;
 	CLKCTRL.MCLKLOCK = CLKCTRL_LOCKEN_bm;
@@ -95,7 +95,7 @@ int main(void)
 	while(true)
 	{
 		led_process(&led_mode);
-		if(time_flags & TIME_FLAG_10MS)
+		if(time_flags & TIME_FLAG_10MS_bm)
 		{
 			// left shift button states and add current button state
 			button_states_10ms = (button_states_10ms << 1) | (IS_BUTTON & 0x01);
@@ -104,10 +104,10 @@ int main(void)
 			{
 				led_mode_decode(&led_mode, click_count);
 			}
-			time_flags &= !TIME_FLAG_10MS;
+			time_flags &= ~TIME_FLAG_10MS_bm;
 		}
 		
-		if(time_flags & TIME_FLAG_500MS)
+		if(time_flags & TIME_FLAG_500MS_bm)
 		{
 			button_states_500ms = (button_states_500ms << 1) | (IS_BUTTON & 0x01);
 			// power off when button hold for at least 2000ms
@@ -115,7 +115,7 @@ int main(void)
 			{	
 				power_hold_enable(false);
 			}
-			time_flags &= !TIME_FLAG_500MS;
+			time_flags &= ~TIME_FLAG_500MS_bm;
 		}
 	}
 	return 0;

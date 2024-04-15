@@ -29,7 +29,7 @@ void init_led(void)
 	TCA0.SINGLE.INTCTRL |= TCA_SINGLE_OVF_bm;
 }
 
-void led_enable(bool state)
+void led_enable(uint8_t state)
 {
 	if(true == state)
 	{
@@ -41,9 +41,9 @@ void led_enable(bool state)
 	else
 	{
 		// disconnect pins from channels
-		TCA0.SINGLE.CTRLB &= !(TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm);
+		TCA0.SINGLE.CTRLB &= ~(TCA_SINGLE_CMP2EN_bm | TCA_SINGLE_CMP1EN_bm | TCA_SINGLE_CMP0EN_bm);
 		// disable module
-		TCA0.SINGLE.CTRLA &= !TCA_SINGLE_ENABLE_bm;
+		TCA0.SINGLE.CTRLA &= ~TCA_SINGLE_ENABLE_bm;
 	}
 }
 

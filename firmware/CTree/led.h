@@ -40,6 +40,6 @@ typedef struct led_mode_t
 
 void init_led(void);
 void led_process(led_mode_t *mode);
-void led_enable(bool state);
+void led_enable(uint8_t state);
 
 #endif /* LED_H_ */
