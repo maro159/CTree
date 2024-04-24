@@ -28,8 +28,8 @@ typedef enum led_period_t
 typedef enum led_dim_t
 {
 	LED_DIM_LOW = 1,
-	LED_DIM_MID = 2,
-	LED_DIM_HIGH = 4,
+	LED_DIM_MID = 4,
+	LED_DIM_HIGH = 16,
 } led_dim_t;
 
 typedef struct led_mode_t

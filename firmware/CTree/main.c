@@ -46,32 +46,32 @@ static void led_mode_decode(led_mode_t *mode, uint8_t click_count)
 	switch(click_count)
 	{
 		case 0:
-			mode->period = LED_PERIOD_HIGH;
+			mode->period = LED_PERIOD_LOW;
 			mode->dim = LED_DIM_HIGH;
 			break;
 		case 1:
 			mode->period = LED_PERIOD_LOW;
-			mode->dim = LED_DIM_HIGH;
+			mode->dim = LED_DIM_MID;
 			break;
 		case 2:
-			mode->period = LED_PERIOD_HIGH;
-			mode->dim = LED_DIM_MID;
+			mode->period = LED_PERIOD_LOW;
+			mode->dim = LED_DIM_LOW;
 			break;
 		case 3:
-			mode->period = LED_PERIOD_LOW;
-			mode->dim = LED_DIM_MID;
+			mode->period = LED_PERIOD_HIGH;
+			mode->dim = LED_DIM_HIGH;
 			break;
 		case 4:
 			mode->period = LED_PERIOD_HIGH;
-			mode->dim = LED_DIM_LOW;
+			mode->dim = LED_DIM_MID;
 			break;
 		case 5:
-			mode->period = LED_PERIOD_LOW;
+			mode->period = LED_PERIOD_HIGH;
 			mode->dim = LED_DIM_LOW;
 			break;
 		default:
-			mode->period = LED_PERIOD_HIGH;
-			mode->dim = LED_DIM_LOW;
+			mode->period = LED_PERIOD_LOW;
+			mode->dim = LED_DIM_HIGH;
 			break;
 	}
 }
@@ -85,12 +85,15 @@ int main(void)
 	led_mode_decode(&led_mode, click_count);
 	
 	init();
-	led_enable(true);
 	
 	if (IS_BUTTON) power_hold_enable(true);	// enable power hold after power-on initiated by button
+	led_enable(true);
 	sei();									// enable interrupts
-	while (IS_BUTTON);						// wait for button release
-	_delay_ms(1000);
+	while (IS_BUTTON)						// wait for button release
+	{
+		led_process(&led_mode);
+	}
+	//_delay_ms(1000);
 	
 	while(true)
 	{
@@ -102,6 +105,8 @@ int main(void)
 			// detect hold for 40ms to debounce
 			if((button_states_10ms & 0b00001111) == 0b00000111)
 			{
+				click_count++;
+				if(click_count > 5) click_count = 0;
 				led_mode_decode(&led_mode, click_count);
 			}
 			time_flags &= ~TIME_FLAG_10MS_bm;
@@ -113,6 +118,8 @@ int main(void)
 			// power off when button hold for at least 2000ms
 			if((button_states_500ms & 0b00001111) == 0b00000111)
 			{	
+				led_enable(false);
+				while (IS_BUTTON);			// wait for button release
 				power_hold_enable(false);
 			}
 			time_flags &= ~TIME_FLAG_500MS_bm;

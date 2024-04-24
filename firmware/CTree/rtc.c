@@ -23,7 +23,7 @@ void init_rtc(void)
 	RTC.CLKSEL |= RTC_CLKSEL_INT1K_gc;
 	// set period to 10ms
 	while(RTC.STATUS & RTC_PERBUSY_bm);
-	RTC.PER = 0x2710; // 10000
+	RTC.PER = 0x000A; // 10000
 	// enable interrupt on overflow
 	RTC.INTCTRL |= RTC_OVF_bm;
 	// enable module
@@ -42,5 +42,6 @@ ISR(RTC_CNT_vect)
 		time_flags |= TIME_FLAG_500MS_bm;	// set 500ms flag
 		timer_count_500ms = TIMER_COUNT_500MS;	// reset counter
 	}
+	RTC.INTFLAGS |= RTC_OVF_bm;	// clear interrupt flag
 	return;
 }

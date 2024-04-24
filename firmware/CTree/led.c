@@ -52,13 +52,13 @@ static void led_set_brightness(led_t led, uint8_t brightness)
 	switch(led)
 	{
 		case LED1:
-			TCA0.SINGLE.CMP0BUFL = brightness;
+			TCA0.SINGLE.CMP0BUF = brightness;
 			break;
 		case LED2:
-			TCA0.SINGLE.CMP1BUFL = brightness;
+			TCA0.SINGLE.CMP1BUF = brightness;
 			break;
 		case LED3:
-			TCA0.SINGLE.CMP2BUFL = brightness;
+			TCA0.SINGLE.CMP2BUF = brightness;
 			break;
 	}
 }
@@ -83,5 +83,6 @@ void led_process(led_mode_t *mode)
 ISR(TCA0_OVF_vect)
 {
 	ovf_counter++;
+	TCA0.SINGLE.INTFLAGS |= TCA_SINGLE_OVF_bm; // clear interrupt flag
 	return;
 }
